@@ -17,49 +17,49 @@ conversion_factors = {
     "Milimeter (mm)": 0.001,
 }
 
-# Input ekspresi matematika
-expression = st.text_input("Masukkan ekspresi matematika panjang (contoh: 1000km + 1000cm * 200hm):")
-to_unit = st.selectbox("Konversi hasil ke unit:", units)
+# Fungsi konversi ke meter
+def to_meters(value, unit):
+    return value * conversion_factors[unit]
 
-# Fungsi untuk mengevaluasi ekspresi
-import re
+# Fungsi konversi dari meter
+def from_meters(value_in_meters, unit):
+    return value_in_meters / conversion_factors[unit]
 
-def evaluate_expression(expression, to_unit):
-    # Ekstrak nilai dan unit dari ekspresi
-    tokens = re.findall(r"(\d+\.?\d*)\s*([a-zA-Z]+)", expression)
-    if not tokens:
-        return "Ekspresi tidak valid"
+# Input nilai pertama
+value1 = st.number_input("Masukkan angka pertama:", min_value=0.0, step=0.1)
+unit1 = st.selectbox("Pilih unit pertama:", units)
 
-    # Konversi semua nilai ke meter
-    values_in_meters = []
-    for value, unit in tokens:
-        unit_full = next((u for u in conversion_factors if unit in u), None)
-        if unit_full:
-            values_in_meters.append(float(value) * conversion_factors[unit_full])
-        else:
-            return f"Unit tidak dikenal: {unit}"
+# Pilih operasi matematika
+operation = st.selectbox("Pilih operasi:", ["Tambah", "Kurang", "Kali", "Bagi"])
 
-    # Ganti nilai+unit dalam ekspresi dengan nilai dalam meter
-    for (value, unit), value_in_meters in zip(tokens, values_in_meters):
-        expression = expression.replace(f"{value}{unit}", str(value_in_meters))
+# Input nilai kedua
+value2 = st.number_input("Masukkan angka kedua:", min_value=0.0, step=0.1)
+unit2 = st.selectbox("Pilih unit kedua:", units)
 
-    # Evaluasi ekspresi matematika dalam meter
-    try:
-        result_in_meters = eval(expression)
-    except Exception as e:
-        return f"Error dalam evaluasi: {e}"
-
-    # Konversi hasil ke unit yang diminta
-    result_in_target_unit = result_in_meters / conversion_factors[to_unit]
-    return result_in_target_unit
+# Pilih unit hasil
+result_unit = st.selectbox("Pilih unit hasil:", units)
 
 # Proses perhitungan
 if st.button("Hitung"):
-    if expression and to_unit:
-        result = evaluate_expression(expression, to_unit)
-        if isinstance(result, str):
-            st.error(result)
+    # Konversi nilai ke meter
+    value1_in_meters = to_meters(value1, unit1)
+    value2_in_meters = to_meters(value2, unit2)
+
+    # Lakukan operasi matematika
+    if operation == "Tambah":
+        result_in_meters = value1_in_meters + value2_in_meters
+    elif operation == "Kurang":
+        result_in_meters = value1_in_meters - value2_in_meters
+    elif operation == "Kali":
+        result_in_meters = value1_in_meters * value2_in_meters
+    elif operation == "Bagi":
+        if value2_in_meters != 0:
+            result_in_meters = value1_in_meters / value2_in_meters
         else:
-            st.success(f"Hasil: {result} {to_unit}")
-    else:
-        st.error("Silakan masukkan ekspresi dan pilih unit tujuan.")
+            st.error("Tidak dapat membagi dengan nol.")
+            result_in_meters = None
+
+    # Konversi hasil ke unit tujuan
+    if result_in_meters is not None:
+        result = from_meters(result_in_meters, result_unit)
+        st.success(f"Hasil: {result} {result_unit}")
