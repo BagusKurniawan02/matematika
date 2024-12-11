@@ -25,16 +25,23 @@ def to_meters(value, unit):
 def from_meters(value_in_meters, unit):
     return value_in_meters / conversion_factors[unit]
 
-# Input nilai pertama
-value1 = st.number_input("Masukkan angka pertama:", min_value=0.0, step=0.1)
-unit1 = st.selectbox("Pilih unit pertama:", units)
+# Input jumlah perhitungan
+total_calculations = st.number_input("Berapa kali perhitungan ingin dilakukan?", min_value=1, step=1, value=1)
 
-# Pilih operasi matematika
-operation = st.selectbox("Pilih operasi:", ["Tambah", "Kurang", "Kali", "Bagi"])
+values = []
+units = []
+operations = []
 
-# Input nilai kedua
-value2 = st.number_input("Masukkan angka kedua:", min_value=0.0, step=0.1)
-unit2 = st.selectbox("Pilih unit kedua:", units)
+# Input untuk masing-masing perhitungan
+for i in range(total_calculations):
+    st.subheader(f"Perhitungan ke-{i+1}")
+    value = st.number_input(f"Masukkan angka untuk perhitungan ke-{i+1}", min_value=0.0, step=0.1, key=f"value_{i}")
+    unit = st.selectbox(f"Pilih unit untuk angka ke-{i+1}", units, key=f"unit_{i}")
+    values.append((value, unit))
+
+    if i < total_calculations - 1:
+        operation = st.selectbox(f"Pilih operasi setelah angka ke-{i+1}", ["Tambah", "Kurang", "Kali", "Bagi"], key=f"operation_{i}")
+        operations.append(operation)
 
 # Pilih unit hasil
 result_unit = st.selectbox("Pilih unit hasil:", units)
@@ -42,22 +49,24 @@ result_unit = st.selectbox("Pilih unit hasil:", units)
 # Proses perhitungan
 if st.button("Hitung"):
     # Konversi nilai ke meter
-    value1_in_meters = to_meters(value1, unit1)
-    value2_in_meters = to_meters(value2, unit2)
+    converted_values = [to_meters(value, unit) for value, unit in values]
 
-    # Lakukan operasi matematika
-    if operation == "Tambah":
-        result_in_meters = value1_in_meters + value2_in_meters
-    elif operation == "Kurang":
-        result_in_meters = value1_in_meters - value2_in_meters
-    elif operation == "Kali":
-        result_in_meters = value1_in_meters * value2_in_meters
-    elif operation == "Bagi":
-        if value2_in_meters != 0:
-            result_in_meters = value1_in_meters / value2_in_meters
-        else:
-            st.error("Tidak dapat membagi dengan nol.")
-            result_in_meters = None
+    # Lakukan perhitungan
+    result_in_meters = converted_values[0]
+    for i, operation in enumerate(operations):
+        if operation == "Tambah":
+            result_in_meters += converted_values[i + 1]
+        elif operation == "Kurang":
+            result_in_meters -= converted_values[i + 1]
+        elif operation == "Kali":
+            result_in_meters *= converted_values[i + 1]
+        elif operation == "Bagi":
+            if converted_values[i + 1] != 0:
+                result_in_meters /= converted_values[i + 1]
+            else:
+                st.error("Tidak dapat membagi dengan nol.")
+                result_in_meters = None
+                break
 
     # Konversi hasil ke unit tujuan
     if result_in_meters is not None:
