@@ -6,11 +6,6 @@ st.title("Kalkulator Perhitungan dan Konversi Panjang")
 # Pilihan unit
 units = ["Kilometer (km)", "Hektometer (hm)", "Dekameter (dam)", "Meter (m)", "Desimeter (dm)", "Centimeter (cm)", "Milimeter (mm)"]
 
-# Input nilai dan unit awal
-value = st.number_input("Masukkan nilai panjang:", min_value=0.0, step=0.1)
-from_unit = st.selectbox("Dari unit:", units)
-to_unit = st.selectbox("Ke unit:", units)
-
 # Faktor konversi (dalam meter)
 conversion_factors = {
     "Kilometer (km)": 1000,
@@ -22,36 +17,49 @@ conversion_factors = {
     "Milimeter (mm)": 0.001,
 }
 
-# Pilih operasi matematika
-operation = st.selectbox("Pilih operasi:", ["Konversi", "Penjumlahan", "Pengurangan", "Perkalian", "Pembagian"])
+# Input ekspresi matematika
+expression = st.text_input("Masukkan ekspresi matematika panjang (contoh: 1000km + 1000cm * 200hm):")
+to_unit = st.selectbox("Konversi hasil ke unit:", units)
 
-# Input nilai kedua jika bukan konversi
-if operation != "Konversi":
-    value2 = st.number_input("Masukkan nilai kedua:", min_value=0.0, step=0.1)
+# Fungsi untuk mengevaluasi ekspresi
+import re
+
+def evaluate_expression(expression, to_unit):
+    # Ekstrak nilai dan unit dari ekspresi
+    tokens = re.findall(r"(\d+\.?\d*)\s*([a-zA-Z]+)", expression)
+    if not tokens:
+        return "Ekspresi tidak valid"
+
+    # Konversi semua nilai ke meter
+    values_in_meters = []
+    for value, unit in tokens:
+        unit_full = next((u for u in conversion_factors if unit in u), None)
+        if unit_full:
+            values_in_meters.append(float(value) * conversion_factors[unit_full])
+        else:
+            return f"Unit tidak dikenal: {unit}"
+
+    # Ganti nilai+unit dalam ekspresi dengan nilai dalam meter
+    for (value, unit), value_in_meters in zip(tokens, values_in_meters):
+        expression = expression.replace(f"{value}{unit}", str(value_in_meters))
+
+    # Evaluasi ekspresi matematika dalam meter
+    try:
+        result_in_meters = eval(expression)
+    except Exception as e:
+        return f"Error dalam evaluasi: {e}"
+
+    # Konversi hasil ke unit yang diminta
+    result_in_target_unit = result_in_meters / conversion_factors[to_unit]
+    return result_in_target_unit
 
 # Proses perhitungan
 if st.button("Hitung"):
-    if operation == "Konversi":
-        if from_unit and to_unit:
-            # Konversi ke meter
-            value_in_meters = value * conversion_factors[from_unit]
-            # Konversi dari meter ke unit tujuan
-            converted_value = value_in_meters / conversion_factors[to_unit]
-            st.success(f"{value} {from_unit} = {converted_value} {to_unit}")
+    if expression and to_unit:
+        result = evaluate_expression(expression, to_unit)
+        if isinstance(result, str):
+            st.error(result)
         else:
-            st.error("Silakan pilih unit awal dan unit tujuan.")
-    elif operation == "Penjumlahan":
-        result = value + value2
-        st.success(f"Hasil Penjumlahan: {result}")
-    elif operation == "Pengurangan":
-        result = value - value2
-        st.success(f"Hasil Pengurangan: {result}")
-    elif operation == "Perkalian":
-        result = value * value2
-        st.success(f"Hasil Perkalian: {result}")
-    elif operation == "Pembagian":
-        if value2 != 0:
-            result = value / value2
-            st.success(f"Hasil Pembagian: {result}")
-        else:
-            st.error("Tidak dapat membagi dengan nol.")
+            st.success(f"Hasil: {result} {to_unit}")
+    else:
+        st.error("Silakan masukkan ekspresi dan pilih unit tujuan.")
